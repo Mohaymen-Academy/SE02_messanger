@@ -7,7 +7,6 @@ import com.mohaymen.model.entity.Update;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-
 import java.util.List;
 
 @JsonView(Views.ChatDisplay.class)
@@ -27,7 +26,5 @@ public class ChatDisplay {
     private boolean isPinned;
 
     private boolean hasBlockedYou;
-
-    private int accessPermission;
 
 }

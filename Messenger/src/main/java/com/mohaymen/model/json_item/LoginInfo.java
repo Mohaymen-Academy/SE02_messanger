@@ -21,4 +21,15 @@ public class LoginInfo {
     public Profile profile;
 
     public String lastSeen;
+
+    public static class LoginInfoBuilder {
+        public LoginInfoBuilder profile(Profile profile) {
+            if (profile.getLastProfilePicture() != null) {
+                profile.getLastProfilePicture().setPreLoadingContent(profile.getLastProfilePicture().getContent());
+            }
+            this.profile = profile;
+            return this;
+        }
+    }
+
 }

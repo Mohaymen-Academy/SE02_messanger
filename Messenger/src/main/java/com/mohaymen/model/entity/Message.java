@@ -5,15 +5,15 @@ import com.fasterxml.jackson.annotation.JsonView;
 import com.mohaymen.model.json_item.ReplyMessageInfo;
 import com.mohaymen.model.json_item.Views;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import java.time.Instant;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @Entity
+@Builder
+@AllArgsConstructor
 @Table(name = "Message")
 public class Message {
 
@@ -71,6 +71,10 @@ public class Message {
     @JsonProperty(value="isEdited")
     @Column(name = "is_edited")
     private boolean isEdited;
+
+    @JsonView({Views.GetMessage.class, Views.ChatDisplay.class})
+    @Column(name = "message_preview")
+    private String messagePreview;
 
     public Message addView() {
         this.viewCount++;

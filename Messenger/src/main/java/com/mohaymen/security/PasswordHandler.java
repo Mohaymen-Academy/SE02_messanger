@@ -1,10 +1,10 @@
 package com.mohaymen.security;
 
 import lombok.SneakyThrows;
-
 import java.security.MessageDigest;
 
 public class PasswordHandler {
+
     public static byte[] configPassword(byte[] password, byte[] saltArray) {
         byte[] combined = combineArray(password, saltArray);
         return getHashed(combined);
@@ -22,4 +22,5 @@ public class PasswordHandler {
         MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
         return messageDigest.digest(bytes);
     }
+
 }

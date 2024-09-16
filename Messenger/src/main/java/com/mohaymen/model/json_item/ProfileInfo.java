@@ -22,4 +22,19 @@ public class ProfileInfo {
 
     public List<MediaFile> profilePictures;
 
+    public static class ProfileInfoBuilder {
+        public ProfileInfo.ProfileInfoBuilder profilePictures(List<MediaFile> mediaFiles) {
+            mediaFiles.forEach(x -> x.setPreLoadingContent(x.getContent()));
+            this.profilePictures = mediaFiles;
+            return this;
+        }
+        public ProfileInfo.ProfileInfoBuilder profile(Profile profile) {
+            if(profile.getLastProfilePicture() != null)
+                profile.getLastProfilePicture().setPreLoadingContent(
+                    profile.getLastProfilePicture().getContent() );
+            this.profile = profile;
+            return this;
+        }
+    }
+
 }

@@ -1,11 +1,10 @@
 package com.mohaymen.model.entity;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonView;
-import com.mohaymen.model.json_item.Views;
 import com.mohaymen.model.supplies.ProfilePareId;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 @RequiredArgsConstructor
 @NoArgsConstructor
@@ -47,6 +46,8 @@ public class ChatParticipant {
 
     @Setter
     @ManyToOne
+    @OnDelete(action = OnDeleteAction.SET_NULL)
     @JoinColumn(name = "pinned_msg",referencedColumnName = "message_id")
     private Message pinnedMessage;
+
 }

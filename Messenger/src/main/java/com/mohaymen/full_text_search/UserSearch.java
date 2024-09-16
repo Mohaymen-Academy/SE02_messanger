@@ -4,16 +4,11 @@ import lombok.SneakyThrows;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.KeywordAnalyzer;
 import org.apache.lucene.analysis.miscellaneous.PerFieldAnalyzerWrapper;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.*;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class UserSearch extends SearchIndex {
 
@@ -61,8 +56,9 @@ public class UserSearch extends SearchIndex {
         Query idQuery = new TermQuery(idTerm);
         try {
             List<Document> documents = searchIndexQuery(idQuery, 1);
-            email = documents.get(0).get(FieldNameLucene.PROFILE_ID);
-        } catch (IOException ignore) { }
+            email = documents.get(0).get(FieldNameLucene.EMAIL);
+        } catch (IOException ignore) {
+        }
         Document document = createDocument(profileId, email, handle);
         try {
             updateDocument(
@@ -88,10 +84,10 @@ public class UserSearch extends SearchIndex {
     public List<Document> searchInAllUsers(String queryString) {
         BooleanQuery booleanQuery = new BooleanQuery.Builder()
                 .add(new PrefixQuery(new Term(FieldNameLucene.EMAIL,
-                        analyzer.normalize(FieldNameLucene.EMAIL, queryString))),
+                                analyzer.normalize(FieldNameLucene.EMAIL, queryString))),
                         BooleanClause.Occur.SHOULD)
                 .add(new PrefixQuery(new Term(FieldNameLucene.HANDLE,
-                        analyzer.normalize(FieldNameLucene.HANDLE, queryString))),
+                                analyzer.normalize(FieldNameLucene.HANDLE, queryString))),
                         BooleanClause.Occur.SHOULD)
                 .build();
         try {

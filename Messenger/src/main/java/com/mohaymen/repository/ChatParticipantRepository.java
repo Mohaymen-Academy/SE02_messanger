@@ -1,14 +1,12 @@
 package com.mohaymen.repository;
 
-import com.mohaymen.model.entity.ChatParticipant;
-import com.mohaymen.model.entity.Message;
+import com.mohaymen.model.entity.*;
 import com.mohaymen.model.supplies.ProfilePareId;
 import com.mohaymen.model.entity.Profile;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-
 import java.util.List;
 
 public interface ChatParticipantRepository extends JpaRepository<ChatParticipant, ProfilePareId> {

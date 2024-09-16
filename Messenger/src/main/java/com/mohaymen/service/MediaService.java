@@ -1,11 +1,8 @@
 package com.mohaymen.service;
 
-import com.mohaymen.model.entity.MediaFile;
-import com.mohaymen.model.entity.Profile;
-import com.mohaymen.model.entity.ProfilePicture;
+import com.mohaymen.model.entity.*;
 import com.mohaymen.model.supplies.ProfilePictureID;
-import com.mohaymen.repository.MediaFileRepository;
-import com.mohaymen.repository.ProfilePictureRepository;
+import com.mohaymen.repository.*;
 import net.coobird.thumbnailator.Thumbnails;
 import org.springframework.stereotype.Service;
 import javax.imageio.ImageIO;
@@ -18,22 +15,25 @@ import java.util.Map;
 @Service
 public class MediaService {
 
-    private ProfileService profileService;
-    private ProfilePictureRepository profilePictureRepository;
-    private AccountService accountService;
-    private MediaFileRepository mediaFileRepository;
+    private final ProfileService profileService;
+
+    private final ProfilePictureRepository profilePictureRepository;
+
+    private final AccountService accountService;
+
+    private final MediaFileRepository mediaFileRepository;
 
     public MediaService(ProfileService profileService,
                         ProfilePictureRepository profilePictureRepository,
                         AccountService accountService,
-                        MediaFileRepository mediaFileRepository){
+                        MediaFileRepository mediaFileRepository) {
         this.profileService = profileService;
         this.profilePictureRepository = profilePictureRepository;
         this.accountService = accountService;
         this.mediaFileRepository = mediaFileRepository;
     }
 
-    public boolean addProfilePicture(Long userId, Long profileID, MediaFile picture) {
+    public boolean addProfilePicture(Long userId, Long profileID, MediaFile picture) throws Exception {
         ProfilePicture profilePicture = new ProfilePicture();
         Profile profile = profileService.hasPermission(userId, profileID);
         if (profile == null)
@@ -46,7 +46,7 @@ public class MediaService {
         return true;
     }
 
-    public boolean deleteProfilePicture(Long userId, Long profileId, Long mediaFileId) {
+    public boolean deleteProfilePicture(Long userId, Long profileId, Long mediaFileId) throws Exception {
         Profile profile = profileService.hasPermission(userId, profileId);
         if (profile == null)
             return false;
@@ -58,7 +58,7 @@ public class MediaService {
         return true;
     }
 
-    public void deleteFile(Long mediaId){
+    private void deleteFile(Long mediaId) {
         mediaFileRepository.deleteById(mediaId);
     }
 
@@ -85,27 +85,44 @@ public class MediaService {
         return mediaFile;
     }
 
-    public void addCompressedImage(MediaFile mediaFile) throws Exception {
-        mediaFile.setCompressedContent(compressFile(mediaFile.getContent(), 128, 0.5f));
-        mediaFile.setPreLoadingContent(compressFile(mediaFile.getContent(), 8, 1));
+    public MediaFile uploadFile(MediaFile mediaFile){
+        if(mediaFile == null)
+            return null;
+        MediaFile newMedia = new MediaFile();
+        newMedia.setContentSize(mediaFile.getContentSize());
+        newMedia.setContentType(mediaFile.getContentType());
+        newMedia.setMediaName(mediaFile.getMediaName());
+        newMedia.setContent(mediaFile.getContent());
+        if(mediaFile.getContentType().startsWith("image")) {
+            newMedia.setCompressedContent(mediaFile.getCompressedContent());
+            newMedia.setPreLoadingContent(mediaFile.getPreLoadingContent());
+        }
+        mediaFileRepository.save(newMedia);
+        return newMedia;
+    }
+
+    private void addCompressedImage(MediaFile mediaFile) throws Exception {
+        mediaFile.setCompressedContent(compressImage(mediaFile.getContent(), 128, 0.5f, mediaFile.getContentType()));
+        mediaFile.setPreLoadingContent(compressImage(mediaFile.getContent(), 8, 1, mediaFile.getContentType()));
         mediaFileRepository.save(mediaFile);
     }
 
-    private byte[] compressFile(byte[] content, int size, float quality) throws Exception {
+    private byte[] compressImage(byte[] content, int size, float quality, String format) throws Exception {
         ByteArrayInputStream input = new ByteArrayInputStream(content);
         BufferedImage image = ImageIO.read(input);
 
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         Thumbnails.of(image)
                 .size(size, size)
-                .outputFormat("jpg")
+                .outputFormat(format.substring(format.indexOf("/")+1))
                 .outputQuality(quality)
                 .toOutputStream(output);
 
         return output.toByteArray();
     }
 
-    public MediaFile getCompressedPicture(Long mediaId){
+    public MediaFile getCompressedPicture(Long mediaId) {
         return mediaFileRepository.findById(mediaId).get();
     }
+
 }

@@ -10,7 +10,6 @@ import lombok.Getter;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
-
 import java.util.*;
 
 @Getter
@@ -18,13 +17,21 @@ import java.util.*;
 public class ProfileService {
 
     private final ProfilePictureRepository profilePictureRepository;
+
     private final ProfileRepository profileRepository;
+
     private final MediaFileRepository mediaFileRepository;
+
     private final ChatParticipantRepository cpRepository;
+
     private final ServerService serverService;
+
     private final SearchService searchService;
+
     private final ContactService contactService;
+
     private final BlockRepository blockRepository;
+
     private final AccountService accountService;
 
     public ProfileService(ProfilePictureRepository profilePictureRepository,
@@ -49,7 +56,7 @@ public class ProfileService {
         profileRepository.save(profile);
         if (!isUser)
             serverService.sendMessage(profile.getType().name().toLowerCase()
-                    + " name changed to " + name, profile);
+                    + " نام خود را به " + name+" تغییر داد ", profile);
     }
 
     private void editBiography(Profile profile, String newBio, boolean isUser) {
@@ -57,7 +64,7 @@ public class ProfileService {
         profileRepository.save(profile);
         if (!isUser)
             serverService.sendMessage(profile.getType().name().toLowerCase()
-                    + " Bio changed to " + newBio, profile);
+                    + " بیوگرافی خود را به " + newBio+" تغییر داد", profile);
     }
 
     private void editUsername(Profile profile, String newHandle) {
@@ -123,8 +130,39 @@ public class ProfileService {
                 preLoadingProfiles.add(profilePicture.getMediaFile());
             }
         }
-        return ProfileInfo.builder().isContact(isContact).
-                profile(profile).profilePictures(preLoadingProfiles).build();
+        return ProfileInfo.builder()
+                .isContact(isContact)
+                .profile(profile)
+                .profilePictures(preLoadingProfiles)
+                .build();
+    }
+
+    public int getAccessPermission(Profile user, Profile chat) {
+        //0 when you are not the admin and can not send a message in a channel
+        //or blocked by each other
+        ChatParticipant chatParticipant;
+        try {
+            chatParticipant = getParticipant(user, chat);
+        } catch (Exception e) {
+            return chat.getType() == ChatType.USER ? 1 : 0;
+        }
+
+        if (chat.getType() == ChatType.CHANNEL && !chatParticipant.isAdmin()) return 0;
+        if (chat.getType() == ChatType.USER) {
+            Optional<Block> blockPt1 = blockRepository.findById(new ProfilePareId(user, chat));
+            Optional<Block> blockPt2 = blockRepository.findById(new ProfilePareId(chat, user));
+            if (blockPt1.isPresent() || blockPt2.isPresent())
+                return 0;
+        }
+        //if you are the admin of a chanel or group you've got permission to do whatever
+        //can remove or edit his/her messages
+        return chat.getType() != ChatType.USER && chatParticipant.isAdmin() ? 2 : 1;
+    }
+    public ChatParticipant getParticipant(Profile user, Profile dest) throws Exception {
+        Optional<ChatParticipant> participant = cpRepository.findById(new ProfilePareId(user, dest));
+        if (participant.isEmpty())
+            throw new Exception("user is not a member of this chat");
+        return participant.get();
     }
 
 }

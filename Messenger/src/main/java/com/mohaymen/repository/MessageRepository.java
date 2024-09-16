@@ -18,6 +18,7 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
                                                                Long messageID,
                                                                Pageable pageable);
 
+    List<Message> findAllBySenderAndReceiver(Profile senderId, Profile receiverId);
     List<Message> findTopNByReceiverAndMessageIDOrderByTimeDesc(Profile receiver,
                                                         Long messageID,
                                                         Pageable pageable,
@@ -71,18 +72,38 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
                                       @Param("minMessageID") Long minMessageID,
                                       @Param("maxMessageID") Long maxMessageID);
 
-    List<Message> findByReceiverAndMessageIDGreaterThanAndMessageIDLessThan(Profile receiver,
-                                                    Long minMessageIDAmount,
-                                                    Long maxMessageIDAmount);
+    List<Message> findByReceiverAndMessageIDGreaterThanEqualAndMessageIDLessThanEqual(Profile receiver,
+                                                                                      Long minMessageIDAmount,
+                                                                                      Long maxMessageIDAmount);
 
     List<Message> findByReplyMessageId(Long replyMessageId);
 
     @Query("Select m from Message m where ((m.sender = :sender AND m.receiver = :receiver) " +
             "OR (m.sender = :receiver AND m.receiver = :sender)) " +
-            "and m.media is not null and m.media.contentType like :mediaType")
-    List<Message> findMediaOfPVChat(@Param("sender") Profile sender,
-                                    @Param("receiver") Profile receiver, @Param("mediaType") String mediaType);
+            "and m.media is not null and (m.media.contentType like :mediaType or m.media.contentType like :mediaType2)")
+    List<Message> findAudioOrMediaOfPVChat(@Param("sender") Profile sender,
+                                           @Param("receiver") Profile receiver,
+                                           @Param("mediaType") String mediaType,
+                                           @Param("mediaType2") String mediaType2);
 
-    @Query("Select m from Message m where m.receiver = :receiver and m.media is not null and m.media.contentType like :mediaType ")
-    List<Message> findMediaOfChannelOrGroup(@Param("receiver") Profile receiver, @Param("mediaType") String mediaType);
+    @Query("Select m from Message m where m.receiver = :receiver " +
+            "and m.media is not null and (m.media.contentType like :mediaType or m.media.contentType like :mediaType2)")
+    List<Message> findAudioOrMediaOfChannelOrGroup(@Param("receiver") Profile receiver,
+                                                   @Param("mediaType") String mediaType,
+                                                   @Param("mediaType2") String mediaType2);
+
+    @Query("Select m from Message m where ((m.sender = :sender AND m.receiver = :receiver) " +
+            "OR (m.sender = :receiver AND m.receiver = :sender)) " +
+            "and m.media is not null and m.media.contentType not like 'image%' " +
+            "and m.media.contentType not like 'ogg%' " +
+            "and m.media.contentType not like 'mp3%' and m.media.contentType not like 'video%'")
+    List<Message> findFilesOfPVChat(@Param("sender") Profile sender,
+                                    @Param("receiver") Profile receiver);
+
+    @Query("Select m from Message m where m.receiver = :receiver and m.media is not null " +
+            "and m.media.contentType not like 'image%' " +
+            "and m.media.contentType not like 'ogg%'" +
+            "and m.media.contentType not like 'mp3%' and m.media.contentType not like 'video%'")
+    List<Message> findFilesOfChannelOrGroup(@Param("receiver") Profile receiver);
+
 }

@@ -5,13 +5,12 @@ import com.mohaymen.model.supplies.ChatType;
 import com.mohaymen.model.json_item.Views;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotEmpty;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 @Getter
 @Setter
 @NoArgsConstructor
+@RequiredArgsConstructor
 @Entity
 @Table(name = "Profile")
 public class Profile {
@@ -25,14 +24,17 @@ public class Profile {
     @Column(name = "profile_id")
     private Long profileID;
 
+    @NonNull
     @JsonView({Views.ProfileLoginInfo.class, Views.ProfileInfo.class})
     @NotEmpty
     @Column(name = "handle")
     private String handle;
 
+
+    @NonNull
     @JsonView({Views.GetMessage.class, Views.ChatDisplay.class,
             Views.ProfileLoginInfo.class, Views.ProfileInfo.class,
-            Views.ProfileInfo.class})
+            Views.ProfileInfo.class, Views.MemberInfo.class})
     @NotEmpty
     @Column(name = "profile_name", length = 50, nullable = false)
     private String profileName;
@@ -44,10 +46,12 @@ public class Profile {
     @Column(name = "user_count")
     private Integer memberCount;
 
+    @NonNull
     @JsonView({Views.ChatDisplay.class, Views.ProfileInfo.class})
     @Column(name = "type", nullable = false)
     private ChatType type;
 
+    @NonNull
     @JsonView({Views.GetMessage.class, Views.ChatDisplay.class,
             Views.ProfileLoginInfo.class, Views.ProfileInfo.class,
             Views.ProfileInfo.class, Views.MemberInfo.class})
@@ -67,5 +71,9 @@ public class Profile {
     @Transient
     @JsonView({Views.ChatDisplay.class,Views.ProfileLoginInfo.class, Views.MemberInfo.class})
     private String status;
+
+    @Transient
+    @JsonView({Views.ChatDisplay.class})
+    private int accessPermission;
 
 }

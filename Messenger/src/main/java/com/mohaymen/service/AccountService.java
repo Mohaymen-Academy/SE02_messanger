@@ -1,30 +1,35 @@
 package com.mohaymen.service;
 
 import com.mohaymen.model.entity.Account;
-import com.mohaymen.repository.AccountRepository;
-import org.springframework.http.HttpStatus;
+import com.mohaymen.model.entity.Profile;
+import com.mohaymen.repository.*;
+import com.mohaymen.security.PasswordHandler;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
-
+import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 public class AccountService {
+
     private final AccountRepository accountRepository;
 
-    public AccountService(AccountRepository accountRepository) {
+    private final ProfileRepository profileRepository;
+
+    private final ProfilePictureRepository profilePictureRepository;
+
+    private final SearchService searchService;
+
+    public AccountService(AccountRepository accountRepository, ProfileRepository profileRepository, ProfilePictureRepository profilePictureRepository, SearchService searchService) {
         this.accountRepository = accountRepository;
+        this.profileRepository = profileRepository;
+        this.profilePictureRepository = profilePictureRepository;
+        this.searchService = searchService;
     }
 
-    public void UpdateLastSeen(Long userId) {
-        Account account = null;
-        try {
-            account = getAccount(userId);
-        } catch (Exception e) {
-            return;
-        }
+    public void UpdateLastSeen(Long userId) throws Exception {
+        Account account = getAccount(userId);
         if (account.getProfile().isDeleted())
             return;
         account.setLastSeen(LocalDateTime.now());
@@ -43,14 +48,13 @@ public class AccountService {
      * Last seen within a month — between 6-7 days and a month.
      * Last seen a long time ago — more than a month (this is also always shown to blocked users)
      */
-
-
     public String getLastSeen(Long userId) {
-        Account account = null;
+        Account account;
         try {
             account = getAccount(userId);
         } catch (Exception e) {
-            return "Group-Channel";
+            Profile chat=profileRepository.findById(userId).get();
+            return chat.getMemberCount()+" عضو";
         }
         if (userId.equals(2L))
             return "پیامرسان رسمی رسا";
@@ -79,4 +83,30 @@ public class AccountService {
             return "آخرین بازدید " + (daysPassed) + " روز پیش ";
 
     }
+    public void deleteProfile(Profile profile) {
+        UUID uuid = UUID.randomUUID();
+        profilePictureRepository.deleteByProfile(profile);
+        profile.setHandle(profile.getHandle() + uuid);
+        profile.setProfileName("DELETED");
+        profile.setDeleted(true);
+        profile.setLastProfilePicture(null);
+        profileRepository.save(profile);
+    }
+
+    @Transactional
+    public void deleteAccount(Long id, byte[] password) throws Exception {
+        Profile profile = profileRepository.findById(id).get();
+        Account account = accountRepository.findByProfile(profile).get();
+
+        byte[] checkPassword = PasswordHandler.getHashed(
+                PasswordHandler.combineArray(password, account.getSalt()));
+
+        if (!Arrays.equals(checkPassword, account.getPassword()))
+            throw new Exception("Wrong password");
+
+        deleteProfile(profile);
+        searchService.deleteUser(profile);
+        accountRepository.delete(account);
+    }
+
 }

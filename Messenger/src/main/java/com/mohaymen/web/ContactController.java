@@ -3,8 +3,10 @@ package com.mohaymen.web;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.mohaymen.model.entity.Profile;
 import com.mohaymen.model.json_item.Views;
+import com.mohaymen.repository.LogRepository;
 import com.mohaymen.security.JwtHandler;
 import com.mohaymen.service.ContactService;
+import com.mohaymen.service.LogService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,8 +20,12 @@ public class ContactController {
 
     private final ContactService contactService;
 
-    public ContactController(ContactService contactService){
+    private final LogService logger;
+
+    public ContactController(ContactService contactService,
+                             LogRepository logRepository){
         this.contactService = contactService;
+        this.logger = new LogService(logRepository, ContactController.class.getName());
     }
 
     @JsonView(Views.ChatDisplay.class)
@@ -31,12 +37,15 @@ public class ContactController {
         try {
             userId = JwtHandler.getIdFromAccessToken(token);
         } catch (Exception e){
+            return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body(null);
+        }
+        try {
+            Profile profileDisplay = contactService.addContact(userId, id, customName);
+            return ResponseEntity.ok().body(profileDisplay);
+        } catch (Exception e){
+            logger.error("failed add contact: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
         }
-        Profile profileDisplay = contactService.addContact(userId, id, customName);
-        if(profileDisplay == null)
-            return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body(null);
-        return ResponseEntity.ok().body(profileDisplay);
     }
 
     @Transactional
@@ -48,11 +57,15 @@ public class ContactController {
         try {
             id = JwtHandler.getIdFromAccessToken(token);
         } catch (Exception e){
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("invalid jwt");
+            return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("invalid jwt");
         }
-        if(!contactService.deleteContact(id,contactId))
-            return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("invalid delete contact");
-        return ResponseEntity.ok().body("deleted");
+        try {
+            contactService.deleteContact(id,contactId);
+            return ResponseEntity.ok().body("deleted");
+        }catch (Exception e){
+            logger.error("failed delete contact: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("invalid delete contact");
+        }
     }
 
     @JsonView(Views.ChatDisplay.class)
@@ -62,7 +75,7 @@ public class ContactController {
         try {
             id = JwtHandler.getIdFromAccessToken(token);
         } catch (Exception e){
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+            return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body(null);
         }
         return ResponseEntity.ok().body(contactService.getContactsOfOneUser(id));
     }
@@ -75,9 +88,15 @@ public class ContactController {
         try {
             userId = JwtHandler.getIdFromAccessToken(token);
         } catch (Exception e){
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("failed");
+            return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("failed");
         }
-        contactService.editCustomName(userId, id, (String) body.get("custom-name"));
-        return ResponseEntity.ok().body("successful");
+        try {
+            contactService.editCustomName(userId, id, (String) body.get("custom-name"));
+            return ResponseEntity.ok().body("successful");
+        } catch (Exception e){
+            logger.error("failed edit contact: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("invalid edit contact");
+        }
     }
+
 }

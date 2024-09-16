@@ -54,6 +54,13 @@
         </dependency>
         <!-- END - postgresql -->
 
+        <!-- START - email -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+        <!-- END - email -->
+
         <!-- START - lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>

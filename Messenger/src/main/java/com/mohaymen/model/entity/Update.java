@@ -31,10 +31,11 @@ public class Update {
     @Column(name = "message_id")
     @NonNull
     @JsonView(Views.ChatDisplay.class)
-    private Long MessageId;
+    private Long messageId;
 
     @Transient
     @Setter
+    @JsonView(Views.ChatDisplay.class)
     private Message message;
 
 }

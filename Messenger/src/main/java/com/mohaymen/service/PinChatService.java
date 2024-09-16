@@ -1,16 +1,11 @@
 package com.mohaymen.service;
 
-import com.mohaymen.model.entity.ChatParticipant;
-import com.mohaymen.model.entity.Profile;
-import com.mohaymen.repository.BlockRepository;
-import com.mohaymen.repository.ChatParticipantRepository;
-import com.mohaymen.repository.MessageRepository;
-import com.mohaymen.repository.ProfileRepository;
+import com.mohaymen.model.entity.*;
+import com.mohaymen.repository.*;
 import org.springframework.stereotype.Service;
 
 @Service
 public class PinChatService extends PinService {
-
 
     public PinChatService(ChatParticipantRepository cpRepository,
                           BlockRepository blockRepository,
@@ -34,4 +29,5 @@ public class PinChatService extends PinService {
         chatParticipant.setPinned(false);
         cpRepository.save(chatParticipant);
     }
+
 }

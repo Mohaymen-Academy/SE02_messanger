@@ -1,11 +1,11 @@
 package com.mohaymen.model.entity;
 
 import jakarta.persistence.*;
-import lombok.NoArgsConstructor;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
+import lombok.*;
 import java.time.LocalDateTime;
 
+@Getter
+@ToString
 @Entity
 @Table(name = "Log")
 @NoArgsConstructor

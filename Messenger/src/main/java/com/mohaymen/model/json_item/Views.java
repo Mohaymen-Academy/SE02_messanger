@@ -2,35 +2,35 @@ package com.mohaymen.model.json_item;
 
 public class Views {
 
-    public static interface ChatDisplay {
+    public interface ChatDisplay {
 
     }
 
-    public static interface GetMessage {
+    public interface GetMessage {
 
     }
 
-    public static interface ProfileLoginInfo {
+    public interface ProfileLoginInfo {
 
     }
 
-    public static interface GetCompressedPicture {
+    public interface GetCompressedPicture {
 
     }
 
-    public static interface GetOriginalPicture {
+    public interface GetOriginalPicture {
 
     }
 
-    public static interface ProfileInfo {
+    public interface ProfileInfo {
 
     }
 
-    public static interface MemberInfo {
+    public interface MemberInfo {
 
     }
 
-    public static interface GetMedia {
+    public interface GetMedia {
 
     }
 

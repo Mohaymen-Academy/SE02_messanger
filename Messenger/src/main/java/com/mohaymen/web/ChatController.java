@@ -1,27 +1,24 @@
 package com.mohaymen.web;
 
 import com.fasterxml.jackson.annotation.JsonView;
-import com.mohaymen.model.entity.MediaFile;
-import com.mohaymen.model.entity.Profile;
-import com.mohaymen.model.json_item.ChatListInfo;
+import com.mohaymen.model.entity.*;
+import com.mohaymen.model.json_item.*;
 import com.mohaymen.model.supplies.ChatType;
-import com.mohaymen.model.json_item.Views;
 import com.mohaymen.repository.LogRepository;
 import com.mohaymen.security.JwtHandler;
-import com.mohaymen.service.ChatService;
-import com.mohaymen.service.MediaService;
-import com.mohaymen.service.LogService;
+import com.mohaymen.service.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.*;
 
 @RestController
 public class ChatController {
 
     private final ChatService chatService;
+
     private final MediaService mediaService;
+
     private final LogService logger;
 
     public ChatController(ChatService chatService,
@@ -46,8 +43,8 @@ public class ChatController {
             ChatListInfo chatListInfo = chatService.getChats(userId, limit);
             return ResponseEntity.ok().body(chatListInfo);
         } catch (Exception e) {
-            logger.error(e.getMessage());
             e.printStackTrace();
+            logger.error("Failed get chats: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
         }
     }
@@ -85,10 +82,11 @@ public class ChatController {
                     mediaService.addProfilePicture(userId, profileId, mediaFile);
             } catch (Exception ignored) {
             }
+            logger.info("Successful create chat : id = " + profileId);
             return ResponseEntity.ok().body("successful");
         } catch (Exception e) {
-            logger.error(e.getMessage());
-            return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("fail");
+            logger.error("Fail create chat: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("fail");
         }
     }
 
@@ -111,8 +109,8 @@ public class ChatController {
             chatService.addMember(userId, chatId, memberId);
             return ResponseEntity.ok().body("successful");
         } catch (Exception e) {
-            logger.error(e.getMessage());
-            return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("You are not allowed to add this user!");
+            logger.error("Failed add member: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("You are not allowed to add this user!");
         }
     }
 
@@ -129,8 +127,8 @@ public class ChatController {
             chatService.joinChannel(userId, channelId);
             return ResponseEntity.ok().body("successful");
         } catch (Exception e) {
-            logger.error(e.getMessage());
-            return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("Failed");
+            logger.error("Failed join channel: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Failed");
         }
     }
 
@@ -153,46 +151,10 @@ public class ChatController {
             chatService.addAdmin(userId, chatId, memberId);
             return ResponseEntity.ok().build();
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            logger.error("Failed add admin: " + e.getMessage());
             return ResponseEntity.badRequest().build();
         }
     }
-//
-//
-//    @PutMapping("/pin-chat/{chatId}")
-//    public ResponseEntity<String> addToPins(@RequestHeader(name = "Authorization") String token,
-//                                            @PathVariable Long chatId) {
-//        long userId;
-//        try {
-//            userId = JwtHandler.getIdFromAccessToken(token);
-//        } catch (Exception e) {
-//            return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("User id is not acceptable!");
-//        }
-//        try {
-//            chatService.pinChat(userId, chatId);
-//            return ResponseEntity.ok().build();
-//        } catch (Exception e) {
-//            logger.error("Failed to pin chat : " + e.getMessage());
-//            return ResponseEntity.badRequest().build();
-//        }
-//    }
-//
-//    @PutMapping("/unpin-chat/{chatId}")
-//    public ResponseEntity<String> unpinChat(@RequestHeader(name = "Authorization") String token,
-//                                            @PathVariable Long chatId) {
-//        long userId;
-//        try {
-//            userId = JwtHandler.getIdFromAccessToken(token);
-//        } catch (Exception e) {
-//            return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("User id is not acceptable!");
-//        }
-//        try {
-//            chatService.unpinChat(userId, chatId);
-//            return ResponseEntity.ok().build();
-//        } catch (Exception e) {
-//            return ResponseEntity.badRequest().build();
-//        }
-//    }
 
     @DeleteMapping("/delete-chat")
     public ResponseEntity<String> deleteChat(@RequestHeader(name = "Authorization") String token,
@@ -201,13 +163,17 @@ public class ChatController {
         Long userId;
         try {
             userId = JwtHandler.getIdFromAccessToken(token);
-            chatService.deleteChat(userId, chatId);
         } catch (Exception e) {
-            logger.error(e.getMessage());
-            return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("User id is not acceptable!");
         }
-        logger.info("this chat "+chatId+" was deleted successfully");
-        return ResponseEntity.ok().body("successful");
+        try {
+            chatService.deleteChat(userId, chatId);
+            logger.info("Successful delete chat: id = " + chatId);
+            return ResponseEntity.ok().body("successful");
+        } catch (Exception e) {
+            logger.error("Failed delete chat: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
     }
 
     @DeleteMapping("/leave")
@@ -228,7 +194,7 @@ public class ChatController {
             chatService.leaveChat(userId, chatId);
             return ResponseEntity.ok().build();
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            logger.error("Failed leave chat: " + e.getMessage());
             return ResponseEntity.badRequest().build();
         }
     }
@@ -246,7 +212,7 @@ public class ChatController {
         try {
             return ResponseEntity.ok().body(chatService.getMembers(userId, chatId));
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            logger.error("Failed get members: " + e.getMessage());
             return ResponseEntity.badRequest().body(null);
         }
     }
@@ -263,8 +229,9 @@ public class ChatController {
         try {
             return ResponseEntity.ok().body(chatService.isMemberOfChannel(userId, chatId));
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            logger.error("Failed check if a user is member of channel: " + e.getMessage());
             return ResponseEntity.badRequest().body(false);
         }
     }
+
 }

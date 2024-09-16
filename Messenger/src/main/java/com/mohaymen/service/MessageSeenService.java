@@ -1,13 +1,8 @@
 package com.mohaymen.service;
 
-import com.mohaymen.model.entity.Message;
-import com.mohaymen.model.entity.MessageSeen;
-import com.mohaymen.model.entity.Profile;
-import com.mohaymen.model.supplies.ChatType;
-import com.mohaymen.model.supplies.ProfilePareId;
-import com.mohaymen.repository.MessageRepository;
-import com.mohaymen.repository.MessageSeenRepository;
-import com.mohaymen.repository.ProfileRepository;
+import com.mohaymen.model.entity.*;
+import com.mohaymen.model.supplies.*;
+import com.mohaymen.repository.*;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Optional;
@@ -16,32 +11,40 @@ import java.util.Optional;
 public class MessageSeenService {
 
     private final ProfileRepository profileRepository;
+
     private final MessageRepository messageRepository;
+
     private final MessageSeenRepository msRepository;
+
+    private final UpdateService updateService;
+
     public MessageSeenService(ProfileRepository profileRepository,
                               MessageRepository messageRepository,
-                              MessageSeenRepository msRepository) {
+                              MessageSeenRepository msRepository,
+                              UpdateService updateService) {
         this.profileRepository = profileRepository;
         this.messageRepository = messageRepository;
         this.msRepository = msRepository;
-
+        this.updateService = updateService;
     }
 
-    public void addMessageView(Long userId, Long messageId) throws Exception {
+    public synchronized void addMessageView(Long userId, Long messageId) throws Exception {
         Profile user = getProfile(userId);
         Message message = getMessage(messageId);
-        Profile destination = message.getReceiver().getProfileID()
-                .equals(userId) ? message.getSender() : message.getReceiver();
-        ProfilePareId profilePareId = new ProfilePareId(user, destination);
-        Optional<MessageSeen> messageSeenOptional = msRepository.findById(profilePareId);
+        Profile destination = !message.getReceiver().getType().equals(ChatType.USER)
+                ? message.getReceiver()
+                : (message.getSender().getProfileID().equals(userId)
+                    ? message.getReceiver() : message.getSender());
+        Optional<MessageSeen> messageSeenOptional = msRepository.findById(new ProfilePareId(user, destination));
         MessageSeen messageSeen;
         if (messageSeenOptional.isPresent()) {
             messageSeen = messageSeenOptional.get();
             Long lastMessageSeen = messageSeen.getLastMessageSeenId();
-            addAllMessagesViews(lastMessageSeen + 1, messageId, user, destination);
-            messageSeen.setLastMessageSeenId(Math.max(lastMessageSeen, messageId));
-        }
-        else {
+            if (lastMessageSeen < messageId) {
+                addAllMessagesViews(lastMessageSeen + 1, messageId, user, destination);
+                messageSeen.setLastMessageSeenId(messageId);
+            }
+        } else {
             messageSeen = new MessageSeen(user, destination, messageId);
             Long firstMessageId = destination.getType() == ChatType.USER
                     ? messageRepository.findPVFirstMessage(user, destination).getMessageID()
@@ -58,10 +61,15 @@ public class MessageSeenService {
             messages = messageRepository.findMessagesInRange
                     (user, destination, minMessageId, maxMessageId);
         else
-            messages = messageRepository.findByReceiverAndMessageIDGreaterThanAndMessageIDLessThan
+            messages = messageRepository.findByReceiverAndMessageIDGreaterThanEqualAndMessageIDLessThanEqual
                     (destination, minMessageId, maxMessageId);
-
-        messages.stream().map(Message::addView).forEach(messageRepository::save);
+        for (Message message : messages) {
+            message.addView();
+            messageRepository.save(message);
+            if (!message.getSender().getProfileID().equals(user.getProfileID()) &&
+                    message.getViewCount() % Math.pow(10, (int) Math.log10(message.getViewCount())) == 0)
+                updateService.setNewUpdate(message, UpdateType.SEEN);
+        }
     }
 
     private Message getMessage(Long messageId) throws Exception {
@@ -75,4 +83,5 @@ public class MessageSeenService {
         if (optionalProfile.isEmpty()) throw new Exception("profile not found!");
         return optionalProfile.get();
     }
+
 }

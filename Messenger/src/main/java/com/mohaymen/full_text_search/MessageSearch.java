@@ -6,16 +6,11 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.KeywordAnalyzer;
 import org.apache.lucene.analysis.miscellaneous.PerFieldAnalyzerWrapper;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.*;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class MessageSearch extends SearchIndex {
 
@@ -51,7 +46,7 @@ public class MessageSearch extends SearchIndex {
                                      String senderProfileId,
                                      String receiverProfileId,
                                      String messageText) {
-        Document document =  createDocument(messageId, senderProfileId, receiverProfileId, messageText);
+        Document document = createDocument(messageId, senderProfileId, receiverProfileId, messageText);
         try {
             indexDocument(document);
         } catch (IOException e) {
@@ -63,7 +58,7 @@ public class MessageSearch extends SearchIndex {
                               String senderProfileId,
                               String receiverProfileId,
                               String messageText) {
-        Document document =  createDocument(messageId, senderProfileId, receiverProfileId, messageText);
+        Document document = createDocument(messageId, senderProfileId, receiverProfileId, messageText);
         try {
             updateDocument(new Term(FieldNameLucene.MESSAGE_iD,
                             analyzer.normalize(FieldNameLucene.MESSAGE_iD, messageId)),
@@ -90,8 +85,16 @@ public class MessageSearch extends SearchIndex {
                                               String queryString) {
         BooleanQuery.Builder finalBooleanQuery = new BooleanQuery.Builder();
 
-        finalBooleanQuery.add(getSearchEntryTextQuery(queryString),
-                BooleanClause.Occur.MUST);
+        if(queryString.length() < 3){
+            finalBooleanQuery.add(new TermQuery(
+                            new Term(FieldNameLucene.MESSAGE_TEXT,
+                                    analyzer.normalize(FieldNameLucene.MESSAGE_TEXT, queryString))),
+                    BooleanClause.Occur.MUST);
+        }
+        else{
+            finalBooleanQuery.add(getSearchEntryTextQuery(queryString),
+                    BooleanClause.Occur.MUST);
+        }
 
         BooleanQuery.Builder idBooleanQuery = new BooleanQuery.Builder();
 
@@ -102,8 +105,8 @@ public class MessageSearch extends SearchIndex {
         }
         for (String id : receiverChatIds) {
             idBooleanQuery.add(new TermQuery(
-                    new Term(FieldNameLucene.RECEIVER_ID,
-                            analyzer.normalize(FieldNameLucene.RECEIVER_ID, id))),
+                            new Term(FieldNameLucene.RECEIVER_ID,
+                                    analyzer.normalize(FieldNameLucene.RECEIVER_ID, id))),
                     BooleanClause.Occur.SHOULD);
         }
 
@@ -139,8 +142,8 @@ public class MessageSearch extends SearchIndex {
                 .add(getSearchEntryTextQuery(queryString),
                         BooleanClause.Occur.MUST)
                 .add(new TermQuery(
-                        new Term(FieldNameLucene.RECEIVER_ID,
-                                analyzer.normalize(FieldNameLucene.RECEIVER_ID, receiverProfileId))),
+                                new Term(FieldNameLucene.RECEIVER_ID,
+                                        analyzer.normalize(FieldNameLucene.RECEIVER_ID, receiverProfileId))),
                         BooleanClause.Occur.MUST)
                 .build();
 
@@ -154,21 +157,21 @@ public class MessageSearch extends SearchIndex {
     private BooleanQuery getSearchEntryTextQuery(String queryString) {
         BooleanQuery.Builder searchEntryBooleanQuery = new BooleanQuery.Builder();
 
-        TokenStream stream  = analyzer.tokenStream(FieldNameLucene.MESSAGE_TEXT, queryString);
+        TokenStream stream = analyzer.tokenStream(FieldNameLucene.MESSAGE_TEXT, queryString);
         try {
             stream.reset();
-            while(stream.incrementToken()) {
+            while (stream.incrementToken()) {
                 searchEntryBooleanQuery.add(new FuzzyQuery(
                                 new Term(FieldNameLucene.MESSAGE_TEXT,
                                         analyzer.normalize(FieldNameLucene.MESSAGE_TEXT, stream.getAttribute(CharTermAttribute.class).toString())), 1),
                         BooleanClause.Occur.MUST);
             }
-        }
-        catch(IOException ignored) { }
-        finally {
+        } catch (IOException ignored) {
+        } finally {
             try {
                 stream.close();
-            } catch (IOException ignore) { }
+            } catch (IOException ignore) {
+            }
         }
 
         return searchEntryBooleanQuery.build();
@@ -178,23 +181,23 @@ public class MessageSearch extends SearchIndex {
                                       String receiverProfileId) {
         BooleanQuery idQuerySenderReceiver = new BooleanQuery.Builder()
                 .add(new TermQuery(
-                        new Term(FieldNameLucene.SENDER_ID,
-                                analyzer.normalize(FieldNameLucene.SENDER_ID, senderProfileId))),
+                                new Term(FieldNameLucene.SENDER_ID,
+                                        analyzer.normalize(FieldNameLucene.SENDER_ID, senderProfileId))),
                         BooleanClause.Occur.MUST)
                 .add(new TermQuery(
-                        new Term(FieldNameLucene.RECEIVER_ID,
-                                analyzer.normalize(FieldNameLucene.RECEIVER_ID, receiverProfileId))),
+                                new Term(FieldNameLucene.RECEIVER_ID,
+                                        analyzer.normalize(FieldNameLucene.RECEIVER_ID, receiverProfileId))),
                         BooleanClause.Occur.MUST)
                 .build();
 
         BooleanQuery idQueryReceiverSender = new BooleanQuery.Builder()
                 .add(new TermQuery(
-                        new Term(FieldNameLucene.SENDER_ID,
-                                analyzer.normalize(FieldNameLucene.SENDER_ID, receiverProfileId))),
+                                new Term(FieldNameLucene.SENDER_ID,
+                                        analyzer.normalize(FieldNameLucene.SENDER_ID, receiverProfileId))),
                         BooleanClause.Occur.MUST)
                 .add(new TermQuery(
-                        new Term(FieldNameLucene.RECEIVER_ID,
-                                analyzer.normalize(FieldNameLucene.RECEIVER_ID, senderProfileId))),
+                                new Term(FieldNameLucene.RECEIVER_ID,
+                                        analyzer.normalize(FieldNameLucene.RECEIVER_ID, senderProfileId))),
                         BooleanClause.Occur.MUST)
                 .build();
 

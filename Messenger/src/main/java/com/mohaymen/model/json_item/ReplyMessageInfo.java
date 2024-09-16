@@ -19,4 +19,5 @@ public class ReplyMessageInfo {
 
     private byte[] compressedContent;
 
+    private String messagePreview;
 }

@@ -10,7 +10,9 @@ import java.util.Optional;
 
 @Service
 public class BlockService {
+
     private final BlockRepository blockRepository;
+
     private final ProfileService profileService;
 
     public BlockService(BlockRepository blockRepository, ProfileService profileService) {
@@ -45,4 +47,5 @@ public class BlockService {
             throw new Exception(":|...");
         blockRepository.delete(optionalBlock.get());
     }
+
 }
